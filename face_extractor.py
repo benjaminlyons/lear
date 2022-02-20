@@ -14,10 +14,10 @@ def extract_face(src, dest):
     face_rect = face_classifier.detectMultiScale(gray_img, scaleFactor=1.1, minNeighbors=10)
 
     for (x, y, w, h) in face_rect:
-        cv2.rectangle(img, (x,y), (x+w, y+h), (0, 255, 0), 2)
         face_img = img[y:y+h, x:x+h]
         face_img = cv2.resize(face_img, (100, 100))
         cv2.imwrite(dest, face_img)
+        break
     
 def main():
     
