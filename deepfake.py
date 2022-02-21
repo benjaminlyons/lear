@@ -71,23 +71,23 @@ def compute_validation(loader, ae):
 
 def main():
 
-    BATCH_SIZE = 512
+    BATCH_SIZE = 256
     img_transform = transforms.Compose([transforms.Resize((100,100)), transforms.ToTensor()])
     dataset = torchvision.datasets.ImageFolder('images/biden', transform=img_transform)
     
-    # ae = AutoEncoder().cuda()
-    model = torch.load('biden_model.pth')
-    ae = model['model'].cuda()
+    ae = AutoEncoder().cuda()
+    # model = torch.load('biden_model.pth')
+    # ae = model['model'].cuda()
     print(ae)
     count_param(ae)
 
     loss_fn = nn.BCELoss()
-    # optimizer = torch.optim.Adam(ae.parameters(), lr=0.001)
-    optimizer = model['optimizer']
+    optimizer = torch.optim.Adam(ae.parameters(), lr=0.001)
+    # optimizer = model['optimizer']
 
     epochs = 10000
-    starting_epoch = model['epoch'] + 1
-    # starting_epoch = 0
+    # starting_epoch = model['epoch'] + 1
+    starting_epoch = 0
 
     best = 1000
 
@@ -98,9 +98,9 @@ def main():
     training_size = int(len(dataset)*.8)
     validation_size = len(dataset) - training_size
     [training_data, validation_data] = torch.utils.data.random_split(dataset, [training_size, validation_size])
-    training_data = model["training"]
-    validation_data = model["validation"]
-    training_loader = torch.utils.data.DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
+    # training_data = model["training"]
+    # validation_data = model["validation"]
+    training_loader = torch.utils.data.DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
     validation_loader = torch.utils.data.DataLoader(validation_data, batch_size=1, shuffle=True)
 
     # another useful site analyticsindiamag.com/how-to-implement-convolutional-autoencoder-in-pytorch-with-cuda/ 
@@ -114,7 +114,7 @@ def main():
             outputs = ae.forward(images)
             loss = loss_fn(outputs, images)
             loss.backward()
-            nn.utils.clip_grad_norm_(ae.parameters(), max_norm=1.0, norm_type=2)
+            # nn.utils.clip_grad_norm_(ae.parameters(), max_norm=1.0, norm_type=2)
             optimizer.step()
 
             train_loss += loss.item()*images.size(0)
