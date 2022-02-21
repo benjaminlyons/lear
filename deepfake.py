@@ -4,7 +4,10 @@ import torchvision
 import torchvision.io as io
 import torchvision.transforms as transforms
 from progress.bar import Bar
+<<<<<<< HEAD
 from prettytable import PrettyTable
+=======
+>>>>>>> 36ea870d181ca2cb2305c76718dca200c7bb89b1
 
 def count_param(model):
     count = 0
