@@ -4,10 +4,7 @@ import torchvision
 import torchvision.io as io
 import torchvision.transforms as transforms
 from progress.bar import Bar
-<<<<<<< HEAD
 from prettytable import PrettyTable
-=======
->>>>>>> 36ea870d181ca2cb2305c76718dca200c7bb89b1
 
 def count_param(model):
     count = 0
@@ -78,19 +75,19 @@ def main():
     img_transform = transforms.Compose([transforms.Resize((100,100)), transforms.ToTensor()])
     dataset = torchvision.datasets.ImageFolder('images/biden', transform=img_transform)
     
-    ae = AutoEncoder().cuda()
-    # model = torch.load('b.pth')
-    # ae = model['model'].cuda()
+    # ae = AutoEncoder().cuda()
+    model = torch.load('biden_model.pth')
+    ae = model['model'].cuda()
     print(ae)
     count_param(ae)
 
     loss_fn = nn.BCELoss()
-    optimizer = torch.optim.Adam(ae.parameters(), lr=0.001)
-    # optimizer = model['optimizer']
+    # optimizer = torch.optim.Adam(ae.parameters(), lr=0.001)
+    optimizer = model['optimizer']
 
     epochs = 10000
-    # starting_epoch = model['epoch'] + 1
-    starting_epoch = 0
+    starting_epoch = model['epoch'] + 1
+    # starting_epoch = 0
 
     best = 1000
 
@@ -101,8 +98,8 @@ def main():
     training_size = int(len(dataset)*.8)
     validation_size = len(dataset) - training_size
     [training_data, validation_data] = torch.utils.data.random_split(dataset, [training_size, validation_size])
-    # training_data = model["training"]
-    # validation_data = model["validation"]
+    training_data = model["training"]
+    validation_data = model["validation"]
     training_loader = torch.utils.data.DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
     validation_loader = torch.utils.data.DataLoader(validation_data, batch_size=1, shuffle=True)
 
