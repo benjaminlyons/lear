@@ -16,6 +16,7 @@ def count_param(model):
         count += param
     print(table)
     print(f"Total Params: {count}")
+
 # https://www.codeproject.com/Articles/5298025/Building-and-Training-Deep-Fake-Autoencoders
 class AutoEncoder(nn.Module):
     def __init__(self):
@@ -34,8 +35,10 @@ class AutoEncoder(nn.Module):
         )
 
         self.fc = nn.Sequential(
-                nn.Linear(1024, 256),
-                nn.Linear(256, 1024),
+                nn.Linear(1024, 24),
+                nn.ReLU(),
+                nn.Linear(24, 1024),
+                nn.ReLU()
         )
 
         self.decoder = nn.Sequential(
@@ -73,7 +76,7 @@ def main():
 
     BATCH_SIZE = 256
     img_transform = transforms.Compose([transforms.Resize((100,100)), transforms.ToTensor()])
-    dataset = torchvision.datasets.ImageFolder('images/biden', transform=img_transform)
+    dataset = torchvision.datasets.ImageFolder('images/trump', transform=img_transform)
     
     ae = AutoEncoder().cuda()
     # model = torch.load('biden_model.pth')
@@ -130,13 +133,13 @@ def main():
         loss_log.flush()
 
         if epoch % 10 == 0:
-            torch.save({"model": ae, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "biden_model.pth")
+            torch.save({"model": ae, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "trump_model.pth")
 
         if val_loss < best:
             best = val_loss
-            torch.save({"model": ae, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "best_biden.pth")
+            torch.save({"model": ae, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "best_trump.pth")
         
-    torch.save({"model": ae, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "biden_model.pth")
+    torch.save({"model": ae, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "trump_model.pth")
 
     loss_log.close()
     
