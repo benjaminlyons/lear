@@ -7,7 +7,7 @@ from progress.bar import Bar
 from prettytable import PrettyTable
 import sys
 
-LATENT_DIMS = 48
+LATENT_DIMS = 64
 
 # inspired by https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb#scrollTo=QVpcKoTdOsK7
 class Encoder(nn.Module):
@@ -19,11 +19,11 @@ class Encoder(nn.Module):
             nn.ReLU(),
             nn.Conv2d(256, 256, kernel_size=5,  stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(256, 512, kernel_size=5, stride=2),
+            nn.Conv2d(256, 512, kernel_size=5, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(512, 1024, kernel_size=5, stride=1),
+            nn.Conv2d(512, 1024, kernel_size=5, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(1024, 1024, kernel_size=6),
+            nn.Conv2d(1024, 1024, kernel_size=5),
             nn.ReLU()
         )
 
@@ -32,6 +32,7 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
+        # print(x.shape)
         x = torch.flatten(x, 1)
         x_mu = self.fc_mu(x)
         x_logvar = self.fc_logvar(x)
@@ -44,13 +45,13 @@ class Decoder(nn.Module):
         self.fc = nn.Linear(LATENT_DIMS, 1024)
 
         self.conv = nn.Sequential(
-            nn.ConvTranspose2d(1024, 1024, kernel_size=6, stride=1),
+            nn.ConvTranspose2d(1024, 1024, kernel_size=5),
             nn.ReLU(),
-            nn.ConvTranspose2d(1024, 512, kernel_size=5, stride=1),
+            nn.ConvTranspose2d(1024, 512, kernel_size=5, stride=2, padding=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(512, 256, kernel_size=5, stride=2, output_padding=1),
+            nn.ConvTranspose2d(512, 256, kernel_size=5, stride=2, padding=1, output_padding=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(256, 256, kernel_size=5, stride=2, padding=1, output_padding=1),
+            nn.ConvTranspose2d(256, 256, kernel_size=5, stride=2, padding=1, output_padding=1 ),
             nn.ReLU(),
             nn.ConvTranspose2d(256, 3, kernel_size=5, stride=2, padding=2, output_padding=1),
             nn.Sigmoid()
@@ -110,9 +111,10 @@ def main():
     if not load:
         vae = VAE().cuda()
         optimizer = torch.optim.Adam(vae.parameters(), lr=0.001, weight_decay=1e-5)
-        training_size = int(len(dataset)*.8)
-        validation_size = len(dataset) - training_size
-        [training_data, validation_data] = torch.utils.data.random_split(dataset, [training_size, validation_size])
+        training_size = int(len(dataset)*.6)
+        testing_size = int(len(dataset)*.2)
+        validation_size = len(dataset) - training_size - testing_size
+        [training_data, validation_data, testing_data] = torch.utils.data.random_split(dataset, [training_size, validation_size, testing_size])
         starting_epoch = 0
     else:
         model = torch.load('biden_model.pth')
@@ -121,6 +123,7 @@ def main():
         starting_epoch = model['epoch'] + 1
         training_data = model["training"]
         validation_data = model["validation"]
+        testing_data = model["testing"]
     print(vae)
 
 
@@ -164,13 +167,13 @@ def main():
         loss_log.flush()
 
         if epoch % 10 == 0:
-            torch.save({"model": vae, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "biden_model.pth")
+            torch.save({"model": vae, "testing": testing_data,"optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "biden_model.pth")
 
         if val_loss < best:
             best = val_loss
-            torch.save({"model": vae, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "best_biden.pth")
+            torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "best_biden.pth")
         
-    torch.save({"model": vae, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "biden_model.pth")
+    torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "biden_model.pth")
 
     loss_log.close()
     
