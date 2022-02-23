@@ -7,7 +7,7 @@ from progress.bar import Bar
 from prettytable import PrettyTable
 import sys
 
-LATENT_DIMS = 8
+LATENT_DIMS = 48
 
 # inspired by https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb#scrollTo=QVpcKoTdOsK7
 class Encoder(nn.Module):
@@ -23,10 +23,12 @@ class Encoder(nn.Module):
             nn.ReLU(),
             nn.Conv2d(512, 1024, kernel_size=5, stride=1),
             nn.ReLU(),
+            nn.Conv2d(1024, 1024, kernel_size=6),
+            nn.ReLU()
         )
 
-        self.fc_mu = nn.Linear(1024*6*6, LATENT_DIMS)
-        self.fc_logvar = nn.Linear(1024*6*6, LATENT_DIMS)
+        self.fc_mu = nn.Linear(1024, LATENT_DIMS)
+        self.fc_logvar = nn.Linear(1024, LATENT_DIMS)
 
     def forward(self, x):
         x = self.conv(x)
@@ -39,9 +41,11 @@ class Decoder(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.fc = nn.Linear(LATENT_DIMS, 1024*6*6)
+        self.fc = nn.Linear(LATENT_DIMS, 1024)
 
         self.conv = nn.Sequential(
+            nn.ConvTranspose2d(1024, 1024, kernel_size=6, stride=1),
+            nn.ReLU(),
             nn.ConvTranspose2d(1024, 512, kernel_size=5, stride=1),
             nn.ReLU(),
             nn.ConvTranspose2d(512, 256, kernel_size=5, stride=2, output_padding=1),
@@ -54,7 +58,7 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x = self.fc(x)
-        x = x.view((x.size()[0], 1024, 6, 6))
+        x = x.view((x.size()[0], 1024, 1, 1))
         x = self.conv(x)
         return x
 
@@ -96,7 +100,7 @@ def compute_validation(loader, ae):
 def main():
 
     load = False
-    if sys.argv[1] == '--load':
+    if len(sys.argv) > 1 and sys.argv[1] == '--load':
         load = True
 
     batch_size = 256
@@ -105,7 +109,7 @@ def main():
     
     if not load:
         vae = VAE().cuda()
-        optimizer = torch.optim.Adam(vae.parameters(), lr=0.001)
+        optimizer = torch.optim.Adam(vae.parameters(), lr=0.001, weight_decay=1e-5)
         training_size = int(len(dataset)*.8)
         validation_size = len(dataset) - training_size
         [training_data, validation_data] = torch.utils.data.random_split(dataset, [training_size, validation_size])
