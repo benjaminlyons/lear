@@ -7,7 +7,7 @@ from progress.bar import Bar
 from prettytable import PrettyTable
 import sys
 
-LATENT_DIMS = 24
+LATENT_DIMS = 256
 # inspired by https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb#scrollTo=QVpcKoTdOsK7
 class Encoder(nn.Module):
     def __init__(self):
@@ -105,7 +105,7 @@ def main():
 
     batch_size = 256
     img_transform = transforms.Compose([transforms.Resize((100,100)), transforms.ToTensor()])
-    dataset = torchvision.datasets.ImageFolder('images/biden', transform=img_transform)
+    dataset = torchvision.datasets.ImageFolder('img_align', transform=img_transform)
     
     if not load:
         vae = VAE().cuda()
@@ -116,7 +116,7 @@ def main():
         [training_data, validation_data, testing_data] = torch.utils.data.random_split(dataset, [training_size, validation_size, testing_size])
         starting_epoch = 0
     else:
-        model = torch.load('biden_model.pth')
+        model = torch.load('model.pth')
         vae = model['model'].cuda()
         optimizer = model['optimizer']
         starting_epoch = model['epoch'] + 1
@@ -165,13 +165,13 @@ def main():
         loss_log.flush()
 
         if epoch % 10 == 0:
-            torch.save({"model": vae, "testing": testing_data,"optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "biden_model.pth")
+            torch.save({"model": vae, "testing": testing_data,"optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "model.pth")
 
         if val_loss < best:
             best = val_loss
-            torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "best_biden.pth")
+            torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "best_model.pth")
         
-    torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "biden_model.pth")
+    torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "model.pth")
 
     loss_log.close()
     
