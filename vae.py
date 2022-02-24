@@ -7,8 +7,7 @@ from progress.bar import Bar
 from prettytable import PrettyTable
 import sys
 
-LATENT_DIMS = 64
-
+LATENT_DIMS = 24
 # inspired by https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb#scrollTo=QVpcKoTdOsK7
 class Encoder(nn.Module):
     def __init__(self):
@@ -150,7 +149,6 @@ def main():
             output, mu, logvar = vae.forward(images)
             loss = vae_loss(output, images, mu, logvar)
             loss.backward()
-            # nn.utils.clip_grad_norm_(ae.parameters(), max_norm=1.0, norm_type=2)
             optimizer.step()
 
             train_loss += loss.item()
