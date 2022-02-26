@@ -15,14 +15,24 @@ class Encoder(nn.Module):
 
         self.conv = nn.Sequential(
             nn.Conv2d(3, 256, kernel_size=5, stride=2, padding=2),
+            nn.BatchNorm2d(256),
+            nn.Dropout(.2),
             nn.ReLU(),
             nn.Conv2d(256, 256, kernel_size=5,  stride=2, padding=1),
+            nn.BatchNorm2d(256),
+            nn.Dropout(.2),
             nn.ReLU(),
             nn.Conv2d(256, 512, kernel_size=5, stride=2, padding=1),
+            nn.BatchNorm2d(512),
+            nn.Dropout(.2),
             nn.ReLU(),
             nn.Conv2d(512, 1024, kernel_size=5, stride=2, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.Dropout(.2),
             nn.ReLU(),
             nn.Conv2d(1024, 1024, kernel_size=5),
+            nn.BatchNorm2d(1024),
+            nn.Dropout(.2),
             nn.ReLU()
         )
 
@@ -45,12 +55,20 @@ class Decoder(nn.Module):
 
         self.conv = nn.Sequential(
             nn.ConvTranspose2d(1024, 1024, kernel_size=5),
+            nn.BatchNorm2d(1024),
+            nn.Dropout(.2),
             nn.ReLU(),
             nn.ConvTranspose2d(1024, 512, kernel_size=5, stride=2, padding=1),
+            nn.BatchNorm2d(512),
+            nn.Dropout(.2),
             nn.ReLU(),
             nn.ConvTranspose2d(512, 256, kernel_size=5, stride=2, padding=1, output_padding=1),
+            nn.BatchNorm2d(256),
+            nn.Dropout(.2),
             nn.ReLU(),
             nn.ConvTranspose2d(256, 256, kernel_size=5, stride=2, padding=1, output_padding=1 ),
+            nn.BatchNorm2d(256),
+            nn.Dropout(.2),
             nn.ReLU(),
             nn.ConvTranspose2d(256, 3, kernel_size=5, stride=2, padding=2, output_padding=1),
             nn.Sigmoid()
@@ -71,6 +89,7 @@ class VAE(nn.Module):
     def forward(self, x):
         mu, logvar = self.encoder(x)
         latent_sample = self.sample(mu, logvar)
+        # print(latent_sample.shape)
         output = self.decoder(latent_sample)
         return output, mu, logvar
 
@@ -90,12 +109,14 @@ def vae_loss(output, x, mu, logvar):
 
 def compute_validation(loader, ae):
     validation_loss = 0
+    recon_loss = 0
     for images, _ in loader:
         images = images.cuda()
         outputs, mu, logvar = ae.forward(images)
         loss = vae_loss(outputs, images, mu, logvar)
         validation_loss += loss.item()
-    return validation_loss / len(loader)
+        recon_loss += torch.nn.functional.binary_cross_entropy(outputs, images, reduction='sum').item()
+    return validation_loss / len(loader), recon_loss / len(loader)
 
 def main():
 
@@ -158,20 +179,22 @@ def main():
         prog.finish()
         train_loss = train_loss / (len(training_loader) * batch_size)
         vae.eval()
-        val_loss = compute_validation(validation_loader, vae)
-        print('Epoch: {} \tTraining Loss: {:6f}\n\t\tVal Loss: {:6f}'.format(epoch, train_loss, val_loss))
+        val_loss, recon_loss = compute_validation(validation_loader, vae)
+        print('Epoch: {} \tTraining Loss: {:6f}\n\t\tVal Loss: {:6f}\n\t\tRecon Loss: {:6f}'.format(epoch, train_loss, val_loss, recond_loss))
 
-        loss_log.write(f"{epoch},{train_loss},{val_loss}\n")
+        loss_log.write(f"{epoch},{train_loss},{val_loss},{recon_loss}\n")
         loss_log.flush()
 
         if epoch % 10 == 0:
-            torch.save({"model": vae, "testing": testing_data,"optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "model.pth")
+            # torch.save({"model": vae, "testing": testing_data,"optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "model.pth")
+            torch.save({"model": vae,  "optimizer": optimizer, "epoch": epoch}, "model.pth")
 
         if val_loss < best:
             best = val_loss
-            torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "best_model.pth")
+            # torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "best_model.pth")
+            torch.save({"model": vae,  "optimizer": optimizer, "epoch": epoch}, "best_model.pth")
         
-    torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "model.pth")
+    torch.save({"model": vae,  "optimizer": optimizer, "epoch": epoch}, "model.pth")
 
     loss_log.close()
     
