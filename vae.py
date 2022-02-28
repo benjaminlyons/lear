@@ -8,6 +8,7 @@ from prettytable import PrettyTable
 import sys
 
 LATENT_DIMS = 256
+drop = 0.2
 # inspired by https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb#scrollTo=QVpcKoTdOsK7
 class Encoder(nn.Module):
     def __init__(self):
@@ -16,23 +17,23 @@ class Encoder(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(3, 256, kernel_size=5, stride=2, padding=2),
             nn.BatchNorm2d(256),
-            nn.Dropout(.2),
+            nn.Dropout(drop),
             nn.ReLU(),
             nn.Conv2d(256, 256, kernel_size=5,  stride=2, padding=1),
             nn.BatchNorm2d(256),
-            nn.Dropout(.2),
+            nn.Dropout(drop),
             nn.ReLU(),
             nn.Conv2d(256, 512, kernel_size=5, stride=2, padding=1),
             nn.BatchNorm2d(512),
-            nn.Dropout(.2),
+            nn.Dropout(drop),
             nn.ReLU(),
             nn.Conv2d(512, 1024, kernel_size=5, stride=2, padding=1),
             nn.BatchNorm2d(1024),
-            nn.Dropout(.2),
+            nn.Dropout(drop),
             nn.ReLU(),
             nn.Conv2d(1024, 1024, kernel_size=5),
             nn.BatchNorm2d(1024),
-            nn.Dropout(.2),
+            nn.Dropout(drop),
             nn.ReLU()
         )
 
@@ -56,19 +57,19 @@ class Decoder(nn.Module):
         self.conv = nn.Sequential(
             nn.ConvTranspose2d(1024, 1024, kernel_size=5),
             nn.BatchNorm2d(1024),
-            nn.Dropout(.2),
+            nn.Dropout(drop),
             nn.ReLU(),
             nn.ConvTranspose2d(1024, 512, kernel_size=5, stride=2, padding=1),
             nn.BatchNorm2d(512),
-            nn.Dropout(.2),
+            nn.Dropout(drop),
             nn.ReLU(),
             nn.ConvTranspose2d(512, 256, kernel_size=5, stride=2, padding=1, output_padding=1),
             nn.BatchNorm2d(256),
-            nn.Dropout(.2),
+            nn.Dropout(drop),
             nn.ReLU(),
             nn.ConvTranspose2d(256, 256, kernel_size=5, stride=2, padding=1, output_padding=1 ),
             nn.BatchNorm2d(256),
-            nn.Dropout(.2),
+            nn.Dropout(drop),
             nn.ReLU(),
             nn.ConvTranspose2d(256, 3, kernel_size=5, stride=2, padding=2, output_padding=1),
             nn.Sigmoid()
@@ -85,10 +86,12 @@ class VAE(nn.Module):
         super().__init__()
         self.encoder = Encoder()
         self.decoder = Decoder()
+        self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
         mu, logvar = self.encoder(x)
         latent_sample = self.sample(mu, logvar)
+        # latent_sample = self.dropout(latent_sample)
         # print(latent_sample.shape)
         output = self.decoder(latent_sample)
         return output, mu, logvar
@@ -180,7 +183,7 @@ def main():
         train_loss = train_loss / (len(training_loader) * batch_size)
         vae.eval()
         val_loss, recon_loss = compute_validation(validation_loader, vae)
-        print('Epoch: {} \tTraining Loss: {:6f}\n\t\tVal Loss: {:6f}\n\t\tRecon Loss: {:6f}'.format(epoch, train_loss, val_loss, recond_loss))
+        print('Epoch: {} \tTraining Loss: {:6f}\n\t\tVal Loss: {:6f}\n\t\tRecon Loss: {:6f}'.format(epoch, train_loss, val_loss, recon_loss))
 
         loss_log.write(f"{epoch},{train_loss},{val_loss},{recon_loss}\n")
         loss_log.flush()
