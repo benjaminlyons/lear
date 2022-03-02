@@ -3,16 +3,13 @@ import torch.nn as nn
 import torchvision
 import torchvision.io as io
 import torchvision.transforms as transforms
-#https://github.com/EndlessSora/focal-frequency-loss
-from focal_frequency_loss import FocalFrequencyLoss as FFL
 from progress.bar import Bar
 from prettytable import PrettyTable
 import sys
 
 LATENT_DIMS = 256
-ffl = FFL(loss_weight=1.0, alpha=1.0)
-ffl_cutoff = 50
-# drop = 0.2
+drop = 0.1
+leak = 0.2
 # inspired by https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb#scrollTo=QVpcKoTdOsK7
 class Encoder(nn.Module):
     def __init__(self):
@@ -22,23 +19,23 @@ class Encoder(nn.Module):
             nn.Conv2d(3, 256, kernel_size=5, stride=2, padding=2),
             nn.BatchNorm2d(256),
             # nn.Dropout(drop),
-            nn.ReLU(),
+            nn.LeakyReLU(leak),
             nn.Conv2d(256, 256, kernel_size=5,  stride=2, padding=1),
             nn.BatchNorm2d(256),
             # nn.Dropout(drop),
-            nn.ReLU(),
+            nn.LeakyReLU(leak),
             nn.Conv2d(256, 512, kernel_size=5, stride=2, padding=1),
             nn.BatchNorm2d(512),
             # nn.Dropout(drop),
-            nn.ReLU(),
+            nn.LeakyReLU(leak),
             nn.Conv2d(512, 1024, kernel_size=5, stride=2, padding=1),
             nn.BatchNorm2d(1024),
             # nn.Dropout(drop),
-            nn.ReLU(),
+            nn.LeakyReLU(leak),
             nn.Conv2d(1024, 1024, kernel_size=5),
             nn.BatchNorm2d(1024),
             # nn.Dropout(drop),
-            nn.ReLU()
+            nn.LeakyReLU(leak)
         )
 
         self.fc_mu = nn.Linear(1024, LATENT_DIMS)
@@ -62,19 +59,19 @@ class Decoder(nn.Module):
             nn.ConvTranspose2d(1024, 1024, kernel_size=5),
             nn.BatchNorm2d(1024),
             # nn.Dropout(drop),
-            nn.ReLU(),
+            nn.LeakyReLU(leak),
             nn.ConvTranspose2d(1024, 512, kernel_size=5, stride=2, padding=1),
             nn.BatchNorm2d(512),
             # nn.Dropout(drop),
-            nn.ReLU(),
+            nn.LeakyReLU(leak),
             nn.ConvTranspose2d(512, 256, kernel_size=5, stride=2, padding=1, output_padding=1),
             nn.BatchNorm2d(256),
             # nn.Dropout(drop),
-            nn.ReLU(),
+            nn.LeakyReLU(leak),
             nn.ConvTranspose2d(256, 256, kernel_size=5, stride=2, padding=1, output_padding=1 ),
             nn.BatchNorm2d(256),
             # nn.Dropout(drop),
-            nn.ReLU(),
+            nn.LeakyReLU(leak),
             nn.ConvTranspose2d(256, 3, kernel_size=5, stride=2, padding=2, output_padding=1),
             nn.Sigmoid()
         )
@@ -109,10 +106,7 @@ class VAE(nn.Module):
             return mu
 
 def vae_loss(output, x, mu, logvar, epoch=0):
-    if epoch > ffl_cutoff:
-        alpha = 100
-    else:
-        alpha = 1
+    alpha = 1
     beta = 1
     bce = torch.nn.functional.binary_cross_entropy(output, x, reduction='sum')
     # fft_loss = ffl(output, x)
@@ -153,9 +147,13 @@ def main():
         vae = model['model'].cuda()
         optimizer = model['optimizer']
         starting_epoch = model['epoch'] + 1
-        training_data = model["training"]
-        validation_data = model["validation"]
-        testing_data = model["testing"]
+        # training_data = model["training"]
+        # validation_data = model["validation"]
+        # testing_data = model["testing"]
+        training_size = int(len(dataset)*.6)
+        testing_size = int(len(dataset)*.2)
+        validation_size = len(dataset) - training_size - testing_size
+        [training_data, validation_data, testing_data] = torch.utils.data.random_split(dataset, [training_size, validation_size, testing_size])
     print(vae)
 
 
