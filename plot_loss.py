@@ -20,12 +20,13 @@ def main():
 
 
     # plot the data
-    fig, axs = plt.subplots(1, 2, figsize=(10,5))
-    axs[0].plot(epoch, training_loss)
-    axs[0].set_title("training")
-    axs[1].plot(epoch, validation_loss)
-    axs[1].set_title("valdiation")
+    fig, axs = plt.subplots(1, 1, figsize=(10,5))
+    axs.plot(epoch, training_loss, label="training_loss")
+    axs.set_title("training vs validation")
+    axs.plot(epoch, validation_loss, label="validation_loss")
+    # axs[1].set_title("validation")
 
+    plt.legend()
     plt.savefig("loss.jpg")
     
 

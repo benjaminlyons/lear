@@ -1,0 +1,1 @@
+current best is 256 with leaky relu of .2

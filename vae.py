@@ -132,7 +132,7 @@ def main():
 
     batch_size = 256
     img_transform = transforms.Compose([transforms.Resize((100,100)), transforms.ToTensor()])
-    dataset = torchvision.datasets.ImageFolder('img_align_celeba', transform=img_transform)
+    dataset = torchvision.datasets.ImageFolder('data/img_align_celeba', transform=img_transform)
     
     if not load:
         vae = VAE().cuda()
@@ -143,7 +143,7 @@ def main():
         [training_data, validation_data, testing_data] = torch.utils.data.random_split(dataset, [training_size, validation_size, testing_size])
         starting_epoch = 0
     else:
-        model = torch.load('model.pth')
+        model = torch.load('models/model.pth')
         vae = model['model'].cuda()
         optimizer = model['optimizer']
         starting_epoch = model['epoch'] + 1
@@ -162,7 +162,7 @@ def main():
     best = 100000
 
     # for logging purposes
-    loss_log = open("loss.csv", "a")
+    loss_log = open("loss/loss.csv", "a")
 
     # get data
     training_loader = torch.utils.data.DataLoader(training_data, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -197,14 +197,14 @@ def main():
 
         if epoch % 10 == 0:
             # torch.save({"model": vae, "testing": testing_data,"optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "model.pth")
-            torch.save({"model": vae,  "optimizer": optimizer, "epoch": epoch}, "model.pth")
+            torch.save({"model": vae,  "optimizer": optimizer, "epoch": epoch}, "models/model.pth")
 
         if val_loss < best:
             best = val_loss
             # torch.save({"model": vae, "testing": testing_data, "optimizer": optimizer, "epoch": epoch, "training": training_data, "validation": validation_data}, "best_model.pth")
-            torch.save({"model": vae,  "optimizer": optimizer, "epoch": epoch}, "best_model.pth")
+            torch.save({"model": vae,  "optimizer": optimizer, "epoch": epoch}, "models/best_model.pth")
         
-    torch.save({"model": vae,  "optimizer": optimizer, "epoch": epoch}, "model.pth")
+    torch.save({"model": vae,  "optimizer": optimizer, "epoch": epoch}, "models/model.pth")
 
     loss_log.close()
     
