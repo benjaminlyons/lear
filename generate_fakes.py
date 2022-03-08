@@ -19,7 +19,7 @@ def deepfake():
     count = 0
     row = 0
     LATENT = 256
-    for i in range(81):
+    for i in range(250):
         mean_vector = np.zeros((1,LATENT), dtype=float)
         latent_sample = torch.Tensor(mean_vector).normal_().cuda()
         output = model.decoder(latent_sample)
